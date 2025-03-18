@@ -1,0 +1,9 @@
+{
+    "name": "BLOAD Single Screen Info",
+    "author": "Florian Wesch <fw@dividuum.de>",
+    "desc": "Handles a single screen and shows information based on a BLOAD.txt file.",
+    "runtime": {
+        "antialias": true
+    },
+    "platforms": ["pi/epoch-1", "pi/epoch-2"]
+}

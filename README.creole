@@ -1,0 +1,41 @@
+= BLOAD signs
+
+Displays information about the next show on a single screen.
+Various shows and their assets (images/videos) can be configured.
+
+Multiple Signs can be configured to show information about the
+various screens. Each of them can be configured independently.
+
+== Configure Movies (movies_section)
+
+You can configure multiple movies here. Add a movie by clicking
+on the {{{Add Movie}}} button. In the {{{Name pattern}}} text
+field you can add a pattern that matches the movie.
+
+You can either use the complete name as specified in the BLOAD.txt
+file. Alternatively if you want to match multiple movies (Like
+{{{X MEN}}} and {{{X MEN 3D}}} you can just use {{{X MEN*}}}.
+As with filenames the {{{*}}} matches any value.
+
+Once you've added a movie you should add assets that you want
+to show on the screen. They will be displayed when the movie
+is about to start.
+
+You can add videos and images. Just click {{{Add Asset}}}, then
+set the name and a display time.
+
+== Configure Signs (signs_section)
+
+You can reuse the same Setup for multiple Signs. Click {{{Add Sign}}}
+to add a sign to your Setup. Enter the Device serial number of the
+device. You can find the serial number of any device on the
+<<devices>> screen.
+
+Select the screen so the device knows what content it should
+display. Finally select the rotation.
+
+== Player settings
+
+Finally configure your timezone and set an FTP password. The
+password can be used to upload a BLOAD.txt file from your POS
+system.

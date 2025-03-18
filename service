@@ -1,0 +1,172 @@
+#!/usr/bin/python2.7
+# bump
+import sys, datetime, pytz, time, threading, os, logging, shutil, traceback
+from hosted import config, node, device
+config.restart_on_update()
+
+from pyftpdlib.handlers import FTPHandler
+from pyftpdlib.servers import FTPServer
+from pyftpdlib.authorizers import DummyAuthorizer
+from pyftpdlib.filesystems import AbstractedFS, FilesystemError
+
+class RestrictedFS(AbstractedFS):
+    def can_access(self, filename):
+        return filename == "BLOAD.txt"
+
+    def open(self, filename, mode):
+        if not self.can_access(os.path.basename(filename)):
+            raise FilesystemError("Cannot access %s. Only BLOAD.txt can be modified" % (
+                os.path.basename(filename)))
+        if 'w' in mode:
+            filename += ".temp"
+        return super(RestrictedFS, self).open(filename, mode)
+
+    def remove(self, path):
+        if self.can_access(os.path.basename(path)):
+            super(RestrictedFS, self).remove(path)
+
+    def listdir(self, path):
+        return [
+            filename for filename
+            in super(RestrictedFS, self).listdir(path)
+            if self.can_access(filename)
+        ]
+
+class MyHandler(FTPHandler):
+    def on_file_received(self, file):
+        target = file.replace(".temp", "")
+        with open(file, 'rb') as f:
+            bload = f.read().decode('windows-1252')
+        with open(file, 'wb') as f:
+            f.write(bload.encode('utf8'))
+        os.rename(file, target)
+        shutil.copyfile(target, os.path.join(os.environ['SCRATCH'], os.path.basename(target)))
+        os.system("sync")
+
+    def on_incomplete_file_received(self, file):
+        os.remove(file)
+
+def current_time():
+    now = datetime.datetime.utcnow()
+    now = now.replace(tzinfo=pytz.utc)
+    now = now.astimezone(pytz.timezone(config.timezone))
+    now = now.replace(tzinfo=None)
+
+    since_midnight = (
+        now -
+        now.replace(hour=0, minute=0, second=0, microsecond=0)
+    )
+    seconds_since_midnight = since_midnight.seconds + since_midnight.microseconds / 1000000.
+    return now.strftime("%m/%d/%y"), now, seconds_since_midnight
+
+def send_clock():
+    try:
+        s = os.stat("BLOAD.txt")
+        bload_age = time.time() - s.st_mtime
+        node.send('/age/set:%d' % bload_age)
+    except:
+        pass
+
+    date, now, seconds_since_midnight = current_time()
+
+    node.send('/date/set:%s' % date)
+    node.send('/clock/set:%d' % seconds_since_midnight)
+
+def ftp_thread():
+    try:
+        for fname in ('BLOAD.txt',):
+            shutil.copy2(os.path.join(os.environ['SCRATCH'], fname), fname)
+    except Exception:
+        traceback.print_exc()
+
+    authorizer = DummyAuthorizer()
+    if config.ftp_password:
+        authorizer.add_user('bload', config.ftp_password, homedir='.', perm='elrdw')
+
+    handler = MyHandler
+    handler.authorizer = authorizer
+    handler.banner = "BLOAD ftp server"
+    handler.abstracted_fs = RestrictedFS
+
+    channel = logging.StreamHandler()
+    logger = logging.getLogger('pyftpdlib')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(channel)
+
+    server = FTPServer(('0.0.0.0', 2121), handler)
+    server.serve_forever()
+
+def power_thread():
+    my_serial = os.environ['SERIAL']
+    for sign in config.signs:
+        if sign['serial'] == my_serial:
+            break
+    else:
+        print >>sys.stderr, "couldn't find my sign"
+        return
+    if not sign['blank']:
+        device.turn_screen_on()
+        return
+
+    time.sleep(10)
+
+    my_screen = sign['screen']
+    while 1:
+        try:
+            _, _, seconds_since_midnight = current_time()
+            first, last = 99999, 0
+            with open("BLOAD.txt", "rb") as f:
+                for line in f:
+                    fields = line.split()
+                    screen, _, start, duration = fields[:4]
+
+                    if screen != my_screen:
+                        continue
+
+                    # minute offsets of show start/end
+                    starts = int(start) / 100 * 60 + int(start) % 60
+                    ends = starts + int(duration)
+
+                    first = min(first, starts)
+                    last = max(last, ends)
+
+            turn_on_before = 80
+            turn_off_after = 0
+
+            turn_on = first - turn_on_before
+            turn_off = last + turn_off_after
+            now = int(seconds_since_midnight / 60)
+
+            print >>sys.stderr, "TV on", turn_on, now, turn_off
+            
+            is_on = turn_on < now < turn_off
+            if is_on:
+                device.turn_screen_on()
+            else:
+                device.turn_screen_off()
+        except:
+            traceback.print_exc()
+        time.sleep(30)
+
+def main():
+    while time.time() < 1000000:
+        print >>sys.stderr, "waiting for correct time"
+        time.sleep(1)
+
+    ftp = threading.Thread(target=ftp_thread)
+    ftp.daemon = True
+    ftp.start()
+
+    if 'SERIAL' in os.environ:
+        power = threading.Thread(target=power_thread)
+        power.daemon = True
+        power.start()
+    else:
+        print >>sys.stderr, "power toggling disabled"
+
+    while 1:
+        send_clock()
+        time.sleep(5)
+
+if __name__ == "__main__":
+    main()
