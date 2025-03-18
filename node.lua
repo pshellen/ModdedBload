@@ -341,12 +341,17 @@ function node.render()
         font:write(WIDTH-w-8, HEIGHT-size+2, text, size, 1,1,1,1)
     end
 
-    local size = default_size
-    local text = "Auditorium " .. screen
-    local w = font:width(text, size)
-    local x, y = w+20, size+10
-    box:draw(x, y, x-1800, y-100)
-    font:write(5, 8, text, size, 1,1,1,1)
+local size = default_size
+local text = "Auditorium " .. screen
+local w = font:width(text, size)
+local x = (WIDTH / 2) - (w / 2) -- Center horizontally
+local y = (HEIGHT / 2) + 100    -- Move down from the center by 100 pixels (adjust as needed)
+
+-- Optional box behind text if needed:
+-- box:draw(x - 20, y - size, x + w + 20, y + 20)
+
+font:write(x, y, text, size, 1,1,1,1)
+
 
     corner_logo:draw(5, HEIGHT-default_size-5, default_size+5, HEIGHT-5)
 end
