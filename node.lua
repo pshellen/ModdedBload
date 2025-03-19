@@ -46,7 +46,6 @@ local function Image(asset_name, duration)
     local function draw()
         local w, h = obj:size()
         local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
-        local scale_factor = WIDTH / (x2 - x1)
         current_poster_height = y2 - y1
         obj:draw(0, 0, WIDTH, current_poster_height)
         return sys.now() - started > duration
@@ -81,8 +80,7 @@ local function Video(asset_name)
                     w, h = h, w
                 end
                 local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
-                local scale_factor = WIDTH / (x2 - x1)
-                current_poster_height = (y2 - y1) * scale_factor
+                current_poster_height = y2 - y1
                 obj:place(0, 0, WIDTH, current_poster_height, rotation)
             end
         end
