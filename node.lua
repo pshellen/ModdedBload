@@ -298,7 +298,19 @@ function node.render()
 
         local full_w = font:width(full_text, text_size)
         local full_x = (WIDTH / 2) - (full_w / 2)
-        local poster_bottom = HEIGHT * 0.6
+        -- Dynamically calculate actual poster height based on aspect ratio
+        local poster_aspect = WIDTH / HEIGHT
+        local content_aspect = WIDTH / HEIGHT -- assume default aspect until replaced
+        local poster_bottom = HEIGHT * 0.6 -- fallback
+        if obj then
+            local w, h = obj:size()
+            content_aspect = w / h
+            if content_aspect > poster_aspect then
+                poster_bottom = WIDTH / content_aspect
+            else
+                poster_bottom = HEIGHT * 0.6
+            end
+        end
         local full_y = poster_bottom + ((HEIGHT - poster_bottom) / 2) - (text_size / 2)
 
         box:draw(full_x - 10, full_y - 10, full_x + full_w + 10, full_y + text_size + 10)
