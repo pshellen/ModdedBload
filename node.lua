@@ -103,8 +103,6 @@ local function get_current_show()
         local next_show = shows[idx+1]
         local starts, ends
 
-        -- Message-Id: <1465504497.2051037.633156353.268DA54A@webmail.messagingengine.com>
-        -- Message-Id: <CAHCqjYM87qcOTtXTJO-ZcV835q6P2SPa7=mW2ZkSbWmD_h7MOA@mail.gmail.com>
         local BEFORE_FIRST_SHOW = 60 
         local BEFORE_OTHER_SHOWS = 30
 
@@ -120,13 +118,6 @@ local function get_current_show()
             ends = show.showtime.offset + show.runtime
         end
 
-        -- print(("%d:%02d - %d:%02d %d:%02d %s"):format(
-        --     starts / 60, starts % 60,
-        --     ends / 60, ends % 60, 
-        --     show.showtime.offset / 60, show.showtime.offset % 60,
-        --     show.name
-        -- ))
-
         if starts <= offset and offset < ends then
             return show
         end
@@ -135,7 +126,7 @@ end
 
 util.data_mapper{
     ["age/set"] = function(age)
-        outdated = tonumber(age) > 3600 * 6 -- older than 6 hours?
+        outdated = tonumber(age) > 3600 * 6
         print("bload outdated: ", age, outdated)
     end;
     ["clock/set"] = function(time)
@@ -157,7 +148,6 @@ local function get_assets()
     local show = get_current_show()
     for idx = 1, #movies do
         local movie = movies[idx]
-        -- print(show.match_name, movie.pattern)
         if show and show.match_name:match(movie.match_pattern) then
             print "found my movie"
             return movie.assets
@@ -183,7 +173,7 @@ local function Image(asset_name, duration)
         started = sys.now()
     end
     local function draw()
-        util.draw_correct(obj, 0, 0, WIDTH, HEIGHT)
+        util.draw_correct(obj, 0, 0, WIDTH, HEIGHT * 0.6)
         return sys.now() - started > duration
     end
     local function unload()
@@ -215,9 +205,11 @@ local function Video(asset_name)
                 if portrait then
                     w, h = h, w
                 end
-                local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, w, h)
+                local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT * 0.6, w, h)
                 x1, y1 = vid_scaler(x1, y1)
                 x2, y2 = vid_scaler(x2, y2)
+                y1 = 0
+                y2 = y2 - y1
                 obj:place(x1, y1, x2, y2, rotation)
             end
         end
@@ -284,69 +276,34 @@ function node.render()
 
     player.draw()
 
-    if not screen then
-        font:write(WIDTH/2-120, HEIGHT/2+140, "NO SCREEN CONFIGURED", 24, 1,1,1,.1)
-        font:write(WIDTH/2-60, HEIGHT/2+165, my_serial, 20, 1,1,1,.1)
-        return
-    elseif outdated then
-        font:write(WIDTH/2-110, HEIGHT/2+140, "NO RECENT SCHEDULE", 24, 1,1,1,.1)
-        font:write(WIDTH/2-60, HEIGHT/2+165, my_serial, 20, 1,1,1,.1)
-        return
-    end
-
-    local show = get_current_show()
-
-    if debug then
-        local x, y = WIDTH-250, 10
-        font:write(x, y, "Serial: " .. my_serial, 12, 1,1,1,1); y=y+12
-        local offset = current_offset()
-        font:write(x, y, ("Time: %d (%d:%02d)"):format(
-            offset, offset/60, offset%60
-        ), 12, 1,1,1,1); y=y+12
-        if show then
-            font:write(x, y, "Next show: "..show.name, 12, 1,1,1,1); y=y+12
-            font:write(x, y, ("Show time: %s (%d %d:%02d)"):format(
-                show.showtime.string,
-                show.showtime.offset,
-                show.showtime.hour,
-                show.showtime.minute
-            ), 12, 1,1,1,1); y=y+12
-            font:write(x, y, "Runtime: "..show.runtime, 12, 1,1,1,1); y=y+12
-        end
-    end
-
-    -- Font size
     local default_size = 80
     if portrait then
         default_size = 60
     end
 
+    local show = get_current_show()
+
+    -- Auditorium Number Centered below poster
+    local aud_text = "Auditorium " .. screen
+    local aud_w = font:width(aud_text, default_size)
+    local aud_x = (WIDTH / 2) - (aud_w / 2)
+    local aud_y = (HEIGHT * 0.65)
+    box:draw(aud_x - 20, aud_y - 10, aud_x + aud_w + 20, aud_y + default_size + 10)
+    font:write(aud_x, aud_y, aud_text, default_size, 1,1,1,1)
+
+    -- Showtime and Movie name below auditorium number
     if show then
-        local text = show.showtime.string .. " " .. show.name
-
-        local size = default_size
-        local w
-
-        while true do
-            w = font:width(text, size)
-            if w > WIDTH - 80 then
-                size = size - 2
-            else
-                break
-            end
-        end
-
-        local x, y = WIDTH-w-20, HEIGHT-size-10
-        box:draw(x, y, x+1800, y+100)
-        font:write(WIDTH-w-8, HEIGHT-size+2, text, size, 1,1,1,1)
+        local show_text = show.showtime.string .. " " .. show.name
+        local show_size = default_size - 10
+        local show_w = font:width(show_text, show_size)
+        local show_x = (WIDTH / 2) - (show_w / 2)
+        local show_y = aud_y + default_size + 40
+        box:draw(show_x - 20, show_y - 10, show_x + show_w + 20, show_y + show_size + 10)
+        font:write(show_x, show_y, show_text, show_size, 1,1,1,1)
     end
 
-local size = default_size
-local text = "Auditorium " .. screen
-local w = font:width(text, size)
-local x, y = w+20, size+10
-box:draw(x, y, x-1800, y-100)
-font:write(5, 18, text, size, 1,1,1,1)
+    corner_logo:draw(5, HEIGHT - default_size - 5, default_size + 5, HEIGHT - 5)
+end
 
 
 
