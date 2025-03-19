@@ -1,5 +1,5 @@
 {
-    "name": "Modified BLOAD Single Screen Info",
+    "name": "Modified BLOAD Single Screen",
     "author": "Florian Wesch <fw@dividuum.de>",
     "desc": "Handles a single screen and shows information based on a BLOAD.txt file.",
     "runtime": {
