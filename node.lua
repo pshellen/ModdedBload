@@ -124,7 +124,7 @@ local function get_assets()
     } }
 end
 
--- CENTERED LOGO & POSTER SCALING LOGIC
+-- CENTERED LOGO & FIXED POSTER SCALING
 local function Image(asset_name, duration)
     local obj = resource.load_image(asset_name)
     local started
@@ -137,7 +137,7 @@ local function Image(asset_name, duration)
         local w_img, h_img = obj:size()
 
         if asset_name == main_logo_name then
-            -- Center the logo
+            -- Centered logo scaling
             local scale_factor = math.min(WIDTH / w_img, HEIGHT / h_img) * 0.8
             local draw_w = w_img * scale_factor
             local draw_h = h_img * scale_factor
@@ -145,11 +145,21 @@ local function Image(asset_name, duration)
             local cy = (HEIGHT - draw_h) / 2
             obj:draw(cx, cy, cx + draw_w, cy + draw_h)
         else
-            -- Poster logic: fill width, maintain aspect ratio, anchor to top
+            -- Poster scaling fix for multiple resolutions
             local scale_factor = WIDTH / w_img
             local draw_w = WIDTH
             local draw_h = h_img * scale_factor
-            obj:draw(0, 0, draw_w, draw_h)
+
+            if draw_h > HEIGHT then
+                -- Poster is too tall, adjust width + height proportionally
+                local adjust_factor = HEIGHT / draw_h
+                draw_w = draw_w * adjust_factor
+                draw_h = HEIGHT
+                local offset_x = (WIDTH - draw_w) / 2
+                obj:draw(offset_x, 0, offset_x + draw_w, draw_h)
+            else
+                obj:draw(0, 0, draw_w, draw_h)
+            end
         end
 
         return sys.now() - started > duration
