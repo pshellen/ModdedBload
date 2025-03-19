@@ -226,7 +226,7 @@ function node.render()
 
     player.draw()
 
-    local default_size = 80
+    local default_size = 125
     if portrait then
         default_size = 60
     end
