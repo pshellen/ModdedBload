@@ -341,24 +341,13 @@ function node.render()
         font:write(WIDTH-w-8, HEIGHT-size+2, text, size, 1,1,1,1)
     end
 
--- Calculate the auditorium label position based on video placement
 local size = default_size
 local text = "Auditorium " .. screen
 local w = font:width(text, size)
+local x, y = w+20, size+10
+box:draw(x, y, x-1800, y-100)
+font:write(5, 8, text, size, 1,1,1,1)
 
--- fallback Y position in case there's no video yet (centered with an offset)
-local fallback_y = (HEIGHT / 2) - 50 
-
--- If video loaded, position relative to the video/poster top (y1)
-local y_above_poster = y1 and (y1 - size - 20) or fallback_y
-
--- Center horizontally
-local x = (WIDTH / 2) - (w / 2)
-
--- Optional box behind the text (remove if not needed)
--- box:draw(x - 20, y_above_poster - size, x + w + 20, y_above_poster + 20)
-
-font:write(x, y_above_poster, text, size, 1,1,1,1)
 
 
 
