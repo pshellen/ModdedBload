@@ -286,14 +286,21 @@ function node.render()
     local show = get_current_show()
 
     if show then
-        -- Combined Auditorium + Showtime + Movie Title on same line
+        -- Combined Auditorium + Showtime + Movie Title on same line with dynamic scaling
         local full_text = "Auditorium " .. screen .. " : " .. show.showtime.string .. " " .. show.name
         local text_size = default_size - 10
+
+        -- Dynamically reduce text size to fit within WIDTH - 40
+        while font:width(full_text, text_size) > WIDTH - 40 do
+            text_size = text_size - 2
+            if text_size < 20 then break end -- prevent shrinking too small
+        end
+
         local full_w = font:width(full_text, text_size)
         local full_x = (WIDTH / 2) - (full_w / 2)
         local full_y = (HEIGHT * 0.75)
 
-        box:draw(full_x - 20, full_y - 10, full_x + full_w + 20, full_y + text_size + 10)
+        box:draw(full_x - 10, full_y - 10, full_x + full_w + 10, full_y + text_size + 10)
         font:write(full_x, full_y, full_text, text_size, 1,1,1,1)
     end
 
