@@ -246,7 +246,7 @@ function node.render()
         local full_x = (WIDTH / 2) - (full_w / 2)
 
         -- Offset from the bottom by 40 pixels
-        local full_y = HEIGHT - text_size - 80
+        local full_y = HEIGHT - text_size - 125
 
         box:draw(full_x - 10, full_y - 10, full_x + full_w + 10, full_y + text_size + 10)
         font:write(full_x, full_y, full_text, text_size, 1,1,1,1)
