@@ -27,7 +27,6 @@ local function load_bload(raw)
     schedule.set_bload(raw)
     local screens = schedule.get_screens()
     shows = screens[screen] or {}
-    print("found " .. #shows .. " shows for screen " .. tostring(screen))
 end
 
 util.file_watch("config.json", function(raw)
@@ -45,7 +44,6 @@ util.file_watch("config.json", function(raw)
             scale = sign.scale
         end
     end
-    print("my screen name is " .. tostring(screen))
     movies = config.movies
     for idx = 1, #movies do
         local movie = movies[idx]
@@ -100,7 +98,6 @@ end
 util.data_mapper{
     ["age/set"] = function(age)
         outdated = tonumber(age) > 3600 * 6
-        print("bload outdated: ", age, outdated)
     end;
     ["clock/set"] = function(time)
         base_time = tonumber(time) - sys.now()
@@ -127,21 +124,39 @@ local function get_assets()
     }}
 end
 
+-- CENTERED LOGO HANDLING INSIDE IMAGE()
 local function Image(asset_name, duration)
     local obj = resource.load_image(asset_name)
     local started
+
     local function start()
         started = sys.now()
     end
+
     local function draw()
-        local w, h = obj:size()
-        local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
-        obj:draw(0, 0, WIDTH, y2 - y1)
+        local w_img, h_img = obj:size()
+
+        -- Center and scale if it's the main logo
+        if asset_name == main_logo_name then
+            local scale_factor = math.min(WIDTH / w_img, HEIGHT / h_img) * 0.8
+            local draw_w = w_img * scale_factor
+            local draw_h = h_img * scale_factor
+            local cx = (WIDTH - draw_w) / 2
+            local cy = (HEIGHT - draw_h) / 2
+            obj:draw(cx, cy, cx + draw_w, cy + draw_h)
+        else
+            -- Regular poster: stick to top, full width
+            local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w_img, h_img)
+            obj:draw(0, 0, WIDTH, y2 - y1)
+        end
+
         return sys.now() - started > duration
     end
+
     local function unload()
         obj:dispose()
     end
+
     return {
         start = start;
         draw = draw;
@@ -223,23 +238,21 @@ function node.render()
     local show = get_current_show()
 
     if show then
-        -- Combined Auditorium + Showtime + Movie Title on same line
         local full_text = "Auditorium " .. screen .. " : " .. show.showtime.string .. " " .. show.name
         local text_size = default_size - 10
-
-        -- Dynamically reduce text size to fit within WIDTH - 40
         while font:width(full_text, text_size) > WIDTH - 40 do
             text_size = text_size - 2
             if text_size < 20 then break end
         end
-
         local full_w = font:width(full_text, text_size)
         local full_x = (WIDTH / 2) - (full_w / 2)
-        local full_y = (HEIGHT * 0.75) -- static positioning at 75% down the screen
-
+        local full_y = (HEIGHT * 0.75)
         box:draw(full_x - 10, full_y - 10, full_x + full_w + 10, full_y + text_size + 10)
         font:write(full_x, full_y, full_text, text_size, 1,1,1,1)
     end
+
+    corner_logo:draw(5, HEIGHT - default_size - 5, default_size + 5, HEIGHT - 5)
+end
 
     corner_logo:draw(5, HEIGHT - default_size - 5, default_size + 5, HEIGHT - 5)
 end
