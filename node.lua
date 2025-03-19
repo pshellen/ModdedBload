@@ -286,22 +286,15 @@ function node.render()
     local show = get_current_show()
 
     if show then
-        -- Showtime + Movie Title first
-        local show_text = show.showtime.string .. " " .. show.name
-        local show_size = default_size - 10
-        local show_w = font:width(show_text, show_size)
-        local show_x = (WIDTH / 2) - (show_w / 2)
-        local show_y = (HEIGHT * 0.75)
-        box:draw(show_x - 20, show_y - 10, show_x + show_w + 20, show_y + show_size + 10)
-        font:write(show_x, show_y, show_text, show_size, 1,1,1,1)
+        -- Combined Auditorium + Showtime + Movie Title on same line
+        local full_text = "Auditorium " .. screen .. " : " .. show.showtime.string .. " " .. show.name
+        local text_size = default_size - 10
+        local full_w = font:width(full_text, text_size)
+        local full_x = (WIDTH / 2) - (full_w / 2)
+        local full_y = (HEIGHT * 0.75)
 
-        -- Auditorium below show info
-        local aud_text = "Auditorium " .. screen
-        local aud_w = font:width(aud_text, default_size)
-        local aud_x = (WIDTH / 2) - (aud_w / 2)
-        local aud_y = show_y + show_size + 60
-        box:draw(aud_x - 20, aud_y - 10, aud_x + aud_w + 20, aud_y + default_size + 10)
-        font:write(aud_x, aud_y, aud_text, default_size, 1,1,1,1)
+        box:draw(full_x - 20, full_y - 10, full_x + full_w + 20, full_y + text_size + 10)
+        font:write(full_x, full_y, full_text, text_size, 1,1,1,1)
     end
 
     corner_logo:draw(5, HEIGHT - default_size - 5, default_size + 5, HEIGHT - 5)
