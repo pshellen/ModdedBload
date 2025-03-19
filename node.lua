@@ -115,13 +115,13 @@ local function get_assets()
             return movie.assets
         end
     end
-    return {{
+    return { {
         media = {
             asset_name = main_logo_name,
             type = "image",
         },
         duration = 5
-    }}
+    } }
 end
 
 -- CENTERED LOGO HANDLING INSIDE IMAGE()
@@ -135,8 +135,6 @@ local function Image(asset_name, duration)
 
     local function draw()
         local w_img, h_img = obj:size()
-
-        -- Center and scale if it's the main logo
         if asset_name == main_logo_name then
             local scale_factor = math.min(WIDTH / w_img, HEIGHT / h_img) * 0.8
             local draw_w = w_img * scale_factor
@@ -145,11 +143,9 @@ local function Image(asset_name, duration)
             local cy = (HEIGHT - draw_h) / 2
             obj:draw(cx, cy, cx + draw_w, cy + draw_h)
         else
-            -- Regular poster: stick to top, full width
             local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w_img, h_img)
             obj:draw(0, 0, WIDTH, y2 - y1)
         end
-
         return sys.now() - started > duration
     end
 
@@ -240,13 +236,18 @@ function node.render()
     if show then
         local full_text = "Auditorium " .. screen .. " : " .. show.showtime.string .. " " .. show.name
         local text_size = default_size - 10
+
         while font:width(full_text, text_size) > WIDTH - 40 do
             text_size = text_size - 2
             if text_size < 20 then break end
         end
+
         local full_w = font:width(full_text, text_size)
         local full_x = (WIDTH / 2) - (full_w / 2)
-        local full_y = (HEIGHT * 0.75)
+
+        -- Offset from the bottom by 40 pixels
+        local full_y = HEIGHT - text_size - 40
+
         box:draw(full_x - 10, full_y - 10, full_x + full_w + 10, full_y + text_size + 10)
         font:write(full_x, full_y, full_text, text_size, 1,1,1,1)
     end
