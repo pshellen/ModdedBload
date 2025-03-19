@@ -173,7 +173,11 @@ local function Image(asset_name, duration)
         started = sys.now()
     end
     local function draw()
-        util.draw_correct(obj, 0, 0, WIDTH, HEIGHT * 0.6)
+        local w, h = obj:size()
+        local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
+        local scale_factor = WIDTH / (x2 - x1)
+        local poster_h = (y2 - y1) * scale_factor
+        obj:draw(0, 0, WIDTH, poster_h)
         return sys.now() - started > duration
     end
     local function unload()
@@ -205,12 +209,10 @@ local function Video(asset_name)
                 if portrait then
                     w, h = h, w
                 end
-                local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT * 0.6, w, h)
-                x1, y1 = vid_scaler(x1, y1)
-                x2, y2 = vid_scaler(x2, y2)
-                y1 = 0
-                y2 = y2 - y1
-                obj:place(x1, y1, x2, y2, rotation)
+                local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
+                local scale_factor = WIDTH / (x2 - x1)
+                local poster_h = (y2 - y1) * scale_factor
+                obj:place(0, 0, WIDTH, poster_h, rotation)
             end
         end
         return obj:state() == "finished"
