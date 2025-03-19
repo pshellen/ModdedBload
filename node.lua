@@ -253,6 +253,3 @@ function node.render()
 
     corner_logo:draw(5, HEIGHT - default_size - 5, default_size + 5, HEIGHT - 5)
 end
-
-    corner_logo:draw(5, HEIGHT - default_size - 5, default_size + 5, HEIGHT - 5)
-end
