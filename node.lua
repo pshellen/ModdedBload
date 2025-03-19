@@ -47,7 +47,7 @@ local function Image(asset_name, duration)
         local w, h = obj:size()
         local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
         local scale_factor = WIDTH / (x2 - x1)
-        current_poster_height = (y2 - y1) * scale_factor
+        current_poster_height = y2 - y1
         obj:draw(0, 0, WIDTH, current_poster_height)
         return sys.now() - started > duration
     end
