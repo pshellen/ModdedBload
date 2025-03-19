@@ -311,32 +311,11 @@ function node.render()
         default_size = 60
     end
 
-    if show then
-        local text = show.showtime.string .. " " .. show.name
-
-        local size = default_size
-        local w
-
-        while true do
-            w = font:width(text, size)
-            if w > WIDTH - 80 then
-                size = size - 2
-            else
-                break
-            end
-        end
-
-        local x, y = WIDTH-w-20, HEIGHT-size-10
-        box:draw(x, y, x+1800, y+100)
-        font:write(WIDTH-w-8, HEIGHT-size+2, text, size, 1,1,1,1)
-    end
-
-    -- Auditorium Text
+    -- Combined Auditorium Info and Showtime
     local size = default_size
-    local text = "Auditorium " .. screen .. ": Showing"
+    local text = "Auditorium " .. screen .. ": Showing at " .. (show and show.showtime.string or "N/A")
     local w = font:width(text, size)
-    local x, y = w + 20, size + 45  -- Text placed below the poster
-    -- Adjust alignment here (default is left, right alignment is an option)
+    local x, y = 10, size + 45  -- Position the text below the poster
     font:write(x, y, text, size, 1, 1, 1, 1)
 
     -- Corner Logo
