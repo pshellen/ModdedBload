@@ -145,7 +145,7 @@ local function Image(asset_name, duration)
         else
             local offset_top = 5
             local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w_img, h_img)
-            obj:draw(0, 0, WIDTH, y2 - y1)
+            obj:draw(0, offset_top, WIDTH, y2 - y1)
         end
         return sys.now() - started > duration
     end
