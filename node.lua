@@ -253,5 +253,5 @@ function node.render()
         font:write(full_x, full_y, full_text, text_size, 1,1,1,1)
     end
 
-    corner_logo:draw(5, HEIGHT - default_size - 5, default_size + 5, HEIGHT - 5)
+    corner_logo:draw(10, HEIGHT - default_size - 10, default_size + 10, HEIGHT - 10)
 end
