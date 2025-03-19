@@ -226,31 +226,37 @@ function node.render()
 
     player.draw()
 
-    local default_size = 125
-    if portrait then
-        default_size = 60
-    end
-
     local show = get_current_show()
 
     if show then
         local full_text = "Auditorium " .. screen .. " : " .. show.showtime.string .. " " .. show.name
-        local text_size = default_size - 10
 
-        while font:width(full_text, text_size) > WIDTH - 40 do
-            text_size = text_size - 2
+        local margin = 40
+        local max_width = WIDTH - (margin * 2)
+        local max_height = HEIGHT * 0.15 -- Use up to 15% screen height
+        local text_size = math.floor(max_height)
+
+        while font:width(full_text, text_size) > max_width or text_size > max_height do
+            text_size = text_size - 1
             if text_size < 20 then break end
         end
 
         local full_w = font:width(full_text, text_size)
         local full_x = (WIDTH / 2) - (full_w / 2)
-
-        -- Offset from the bottom by 40 pixels
-        local full_y = HEIGHT - text_size - 125
+        local full_y = HEIGHT - text_size - margin
 
         box:draw(full_x - 10, full_y - 10, full_x + full_w + 10, full_y + text_size + 10)
         font:write(full_x, full_y, full_text, text_size, 1,1,1,1)
     end
 
-    corner_logo:draw(5, HEIGHT - default_size - 5, default_size + 5, HEIGHT - 5)
+    -- Auto-scaled corner logo
+    local logo_max_size = math.floor(WIDTH * 0.08)
+    if logo_max_size < 50 then logo_max_size = 50 end
+
+    corner_logo:draw(
+        5,
+        HEIGHT - logo_max_size - 5,
+        logo_max_size + 5,
+        HEIGHT - 5
+    )
 end
