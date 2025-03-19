@@ -236,7 +236,7 @@ function node.render()
 
     if show then
         local full_text = "Auditorium " .. screen .. " : " .. show.showtime.string .. " " .. show.name
-        local text_size = default_size - 20
+        local text_size = default_size - 5
 
         while font:width(full_text, text_size) > WIDTH - 40 do
             text_size = text_size - 2
