@@ -346,7 +346,7 @@ local text = "Auditorium " .. screen
 local w = font:width(text, size)
 local x, y = w+20, size+10
 box:draw(x, y, x-1800, y-100)
-font:write(5, 8, text, size, 1,1,1,1)
+font:write(5, 48, text, size, 1,1,1,1)
 
 
 
