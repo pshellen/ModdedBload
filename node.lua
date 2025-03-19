@@ -298,7 +298,8 @@ function node.render()
 
         local full_w = font:width(full_text, text_size)
         local full_x = (WIDTH / 2) - (full_w / 2)
-        local full_y = (HEIGHT * 0.75)
+        local poster_bottom = HEIGHT * 0.6
+        local full_y = poster_bottom + ((HEIGHT - poster_bottom) / 2) - (text_size / 2)
 
         box:draw(full_x - 10, full_y - 10, full_x + full_w + 10, full_y + text_size + 10)
         font:write(full_x, full_y, full_text, text_size, 1,1,1,1)
