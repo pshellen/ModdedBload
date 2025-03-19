@@ -1,11 +1,4 @@
--- Copyright (C) 2016-2019 Florian Wesch <fw@dividuum.de>
--- All Rights Reserved.
---
--- Unauthorized copying of this file, via any medium is
--- strictly prohibited. Proprietary and confidential.
-
 gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
-
 util.no_globals()
 
 local json = require "json"
@@ -15,7 +8,6 @@ local matrix = require "matrix2d"
 
 local font = resource.load_font "font.ttf"
 local box = resource.load_image "box.png"
-local white = resource.create_colored_texture(1,1,1,1)
 
 local screen
 local movies = {}
@@ -29,25 +21,122 @@ local outdated = false
 local my_serial = sys.get_env "SERIAL"
 local scale = 1
 
-local current_poster_height = HEIGHT * 0.6 -- default fallback
-
 local schedule = bload.Bload()
 
--- (unchanged setup code here)
+local function load_bload(raw)
+    schedule.set_bload(raw)
+    local screens = schedule.get_screens()
+    shows = screens[screen] or {}
+    print("found " .. #shows .. " shows for screen " .. tostring(screen))
+end
+
+util.file_watch("config.json", function(raw)
+    local config = json.decode(raw)
+    screen = nil
+    rotation = 0
+    main_logo_name = config.main_logo.asset_name
+    corner_logo = resource.load_image(config.corner_logo.asset_name)
+    for idx = 1, #config.signs do
+        local sign = config.signs[idx]
+        if sign.serial == my_serial then
+            screen = sign.screen
+            rotation = sign.rotation
+            debug = sign.debug
+            scale = sign.scale
+        end
+    end
+    print("my screen name is " .. tostring(screen))
+    movies = config.movies
+    for idx = 1, #movies do
+        local movie = movies[idx]
+        movie.match_pattern = glob(movie.pattern:lower())
+    end
+    gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
+    st = util.screen_transform(rotation)
+    vid_scaler = matrix.trans(NATIVE_WIDTH/2, NATIVE_HEIGHT/2) *
+                 matrix.scale(scale, scale) *
+                 matrix.trans(-NATIVE_WIDTH/2, -NATIVE_HEIGHT/2)
+    portrait = rotation == 90 or rotation == 270
+    local ok, raw = pcall(resource.load_file, "BLOAD.txt")
+    if ok then
+        load_bload(raw)
+    end
+end)
+
+util.file_watch("BLOAD.txt", load_bload)
+
+local base_time = 0
+local function current_offset()
+    local time = base_time + sys.now()
+    local offset = (time % 86400) / 60
+    return offset
+end
+
+local function get_current_show()
+    local offset = current_offset()
+    if outdated then return end
+    for idx = 1, #shows do
+        local show = shows[idx]
+        local next_show = shows[idx+1]
+        local starts, ends
+        local BEFORE_FIRST_SHOW = 60 
+        local BEFORE_OTHER_SHOWS = 30
+        if idx == 1 then
+            starts = show.showtime.offset - BEFORE_FIRST_SHOW
+        else
+            starts = show.showtime.offset - BEFORE_OTHER_SHOWS
+        end
+        if next_show then
+            ends = next_show.showtime.offset - BEFORE_OTHER_SHOWS
+        else
+            ends = show.showtime.offset + show.runtime
+        end
+        if starts <= offset and offset < ends then
+            return show
+        end
+    end
+end
+
+util.data_mapper{
+    ["age/set"] = function(age)
+        outdated = tonumber(age) > 3600 * 6
+        print("bload outdated: ", age, outdated)
+    end;
+    ["clock/set"] = function(time)
+        base_time = tonumber(time) - sys.now()
+    end;
+    ["date/set"] = function(date)
+        schedule.set_date(date)
+    end;
+}
+
+local function get_assets()
+    local show = get_current_show()
+    for idx = 1, #movies do
+        local movie = movies[idx]
+        if show and show.match_name:match(movie.match_pattern) then
+            return movie.assets
+        end
+    end
+    return {{
+        media = {
+            asset_name = main_logo_name,
+            type = "image",
+        },
+        duration = 5
+    }}
+end
 
 local function Image(asset_name, duration)
-    print("started new image " .. asset_name)
     local obj = resource.load_image(asset_name)
     local started
-
     local function start()
         started = sys.now()
     end
     local function draw()
         local w, h = obj:size()
         local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
-        current_poster_height = y2 - y1
-        obj:draw(0, 0, WIDTH, current_poster_height)
+        obj:draw(0, 0, WIDTH, y2 - y1)
         return sys.now() - started > duration
     end
     local function unload()
@@ -61,32 +150,22 @@ local function Image(asset_name, duration)
 end
 
 local function Video(asset_name)
-    print("started new video " .. asset_name)
     local file = resource.open_file(asset_name)
     local obj
-
-    local function start()
-    end
+    local function start() end
     local function draw()
         if not obj then
-            obj = resource.load_video{
-                file = file;
-                raw = true;
-            }
+            obj = resource.load_video{ file = file; raw = true; }
         else
             local state, w, h = obj:state()
             if state == "loaded" then
-                if portrait then
-                    w, h = h, w
-                end
+                if portrait then w, h = h, w end
                 local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
-                current_poster_height = y2 - y1
-                obj:place(0, 0, WIDTH, current_poster_height, rotation)
+                obj:place(0, 0, WIDTH, y2 - y1, rotation)
             end
         end
         return obj:state() == "finished"
     end
-
     local function unload()
         obj:dispose()
     end
@@ -97,7 +176,34 @@ local function Video(asset_name)
     }
 end
 
--- (player logic unchanged)
+local function Player()
+    local offset = 0
+    local current = Image(main_logo_name, 5)
+    local next
+    current.start()
+    local function draw()
+        if not next then
+            local assets = get_assets()
+            offset = offset + 1
+            if offset > #assets then offset = 1 end
+            local asset = assets[offset]
+            next = ({
+                image = Image;
+                video = Video;
+            })[asset.media.type](asset.media.asset_name, asset.duration)
+        end
+        local ended = current.draw()
+        if ended then
+            current.unload()
+            current = next
+            next = nil
+            current.start()
+        end
+    end
+    return { draw = draw }
+end
+
+local player = Player()
 
 function node.render()
     gl.clear(1,1,1,0)
@@ -117,9 +223,11 @@ function node.render()
     local show = get_current_show()
 
     if show then
+        -- Combined Auditorium + Showtime + Movie Title on same line
         local full_text = "Auditorium " .. screen .. " : " .. show.showtime.string .. " " .. show.name
         local text_size = default_size - 10
 
+        -- Dynamically reduce text size to fit within WIDTH - 40
         while font:width(full_text, text_size) > WIDTH - 40 do
             text_size = text_size - 2
             if text_size < 20 then break end
@@ -127,7 +235,7 @@ function node.render()
 
         local full_w = font:width(full_text, text_size)
         local full_x = (WIDTH / 2) - (full_w / 2)
-        local full_y = current_poster_height + ((HEIGHT - current_poster_height) / 2) - (text_size / 2)
+        local full_y = (HEIGHT * 0.75) -- static positioning at 75% down the screen
 
         box:draw(full_x - 10, full_y - 10, full_x + full_w + 10, full_y + text_size + 10)
         font:write(full_x, full_y, full_text, text_size, 1,1,1,1)
