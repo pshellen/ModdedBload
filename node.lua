@@ -143,6 +143,7 @@ local function Image(asset_name, duration)
             local cy = (HEIGHT - draw_h) / 2
             obj:draw(cx, cy, cx + draw_w, cy + draw_h)
         else
+            local offset_top = 5
             local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w_img, h_img)
             obj:draw(0, 0, WIDTH, y2 - y1)
         end
