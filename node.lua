@@ -187,8 +187,21 @@ local function Video(asset_name)
             local state, w, h = obj:state()
             if state == "loaded" then
                 if portrait then w, h = h, w end
-                local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
-                obj:place(0, 0, WIDTH, y2 - y1, rotation)
+
+                -- Match poster scaling logic
+                local scale_factor = WIDTH / w
+                local draw_w = WIDTH
+                local draw_h = h * scale_factor
+
+                if draw_h > HEIGHT then
+                    local adjust_factor = HEIGHT / draw_h
+                    draw_w = draw_w * adjust_factor
+                    draw_h = HEIGHT
+                    local offset_x = (WIDTH - draw_w) / 2
+                    obj:place(offset_x, 0, offset_x + draw_w, draw_h, rotation)
+                else
+                    obj:place(0, 0, draw_w, draw_h, rotation)
+                end
             end
         end
         return obj:state() == "finished"
@@ -202,6 +215,7 @@ local function Video(asset_name)
         unload = unload;
     }
 end
+
 
 local function Player()
     local offset = 0
