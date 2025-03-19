@@ -283,7 +283,6 @@ function node.render()
 
     local show = get_current_show()
 
-    -- Auditorium Number Centered below poster
     local aud_text = "Auditorium " .. screen
     local aud_w = font:width(aud_text, default_size)
     local aud_x = (WIDTH / 2) - (aud_w / 2)
@@ -291,7 +290,6 @@ function node.render()
     box:draw(aud_x - 20, aud_y - 10, aud_x + aud_w + 20, aud_y + default_size + 10)
     font:write(aud_x, aud_y, aud_text, default_size, 1,1,1,1)
 
-    -- Showtime and Movie name below auditorium number
     if show then
         local show_text = show.showtime.string .. " " .. show.name
         local show_size = default_size - 10
@@ -303,9 +301,4 @@ function node.render()
     end
 
     corner_logo:draw(5, HEIGHT - default_size - 5, default_size + 5, HEIGHT - 5)
-end
-
-
-
-    corner_logo:draw(5, HEIGHT-default_size-5, default_size+5, HEIGHT-5)
 end
