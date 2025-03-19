@@ -124,7 +124,7 @@ local function get_assets()
     } }
 end
 
--- CENTERED LOGO HANDLING INSIDE IMAGE()
+-- CENTERED LOGO & POSTER SCALING LOGIC
 local function Image(asset_name, duration)
     local obj = resource.load_image(asset_name)
     local started
@@ -135,7 +135,9 @@ local function Image(asset_name, duration)
 
     local function draw()
         local w_img, h_img = obj:size()
+
         if asset_name == main_logo_name then
+            -- Center the logo
             local scale_factor = math.min(WIDTH / w_img, HEIGHT / h_img) * 0.8
             local draw_w = w_img * scale_factor
             local draw_h = h_img * scale_factor
@@ -143,9 +145,13 @@ local function Image(asset_name, duration)
             local cy = (HEIGHT - draw_h) / 2
             obj:draw(cx, cy, cx + draw_w, cy + draw_h)
         else
-            local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w_img, h_img)
-            obj:draw(0, 0, WIDTH, y2 - y1)
+            -- Poster logic: fill width, maintain aspect ratio, anchor to top
+            local scale_factor = WIDTH / w_img
+            local draw_w = WIDTH
+            local draw_h = h_img * scale_factor
+            obj:draw(0, 0, draw_w, draw_h)
         end
+
         return sys.now() - started > duration
     end
 
@@ -233,7 +239,7 @@ function node.render()
 
         local margin = 40
         local max_width = WIDTH - (margin * 2)
-        local max_height = HEIGHT * 0.15 -- Use up to 15% screen height
+        local max_height = HEIGHT * 0.15
         local text_size = math.floor(max_height)
 
         while font:width(full_text, text_size) > max_width or text_size > max_height do
