@@ -124,6 +124,7 @@ local function get_assets()
     } }
 end
 
+-- ✅ MODIFIED IMAGE FUNCTION
 local function Image(asset_name, duration)
     local obj = resource.load_image(asset_name)
     local started
@@ -146,6 +147,15 @@ local function Image(asset_name, duration)
             local cx = (WIDTH - draw_w) / 2
             local cy = (HEIGHT - draw_h) / 2
             obj:draw(cx, cy, cx + draw_w, cy + draw_h)
+
+            -- Auditorium number text below the main logo
+            local auditorium_text = "Auditorium " .. screen
+            local font_size = 50
+            local text_w = font:width(auditorium_text, font_size)
+            local text_x = (WIDTH - text_w) / 2
+            local text_y = cy + draw_h + 20 -- Adjust offset as needed
+
+            font:write(text_x, text_y, auditorium_text, font_size, 1, 1, 1, 1)
         else
             local offset_top = 15
             local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w_img, h_img)
@@ -216,7 +226,7 @@ local function Player()
             offset = offset + 1
             if offset > #assets then offset = 1 end
             local asset = assets[offset]
-            next = ({
+            next = ( {
                 image = Image;
                 video = Video;
             })[asset.media.type](asset.media.asset_name, asset.duration)
