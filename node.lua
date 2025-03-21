@@ -213,9 +213,10 @@ local function Player()
     local next
     current.start()
     local transition_start
+    local transitioning = false
 
     local function draw()
-        if not next then
+        if not transitioning and not next then
             local assets = get_assets()
             offset = offset + 1
             if offset > #assets then offset = 1 end
@@ -224,35 +225,50 @@ local function Player()
                 image = Image;
                 video = Video;
             })[asset.media.type](asset.media.asset_name, asset.duration)
-            transition_start = sys.now()
             next.start()
+            transition_start = sys.now()
+            transitioning = true
         end
 
-        local elapsed = sys.now() - transition_start
-        local alpha = math.min(1, elapsed / fade_duration)
+        -- Fading
+        local alpha = 1
+        if transitioning then
+            local elapsed = sys.now() - transition_start
+            alpha = math.min(1, elapsed / fade_duration)
+        end
 
-        if alpha < 1 then
+        -- Draw current fading out
+        if transitioning and alpha < 1 then
             gl.pushMatrix()
             gl.color(1, 1, 1, 1 - alpha)
             current.draw()
             gl.popMatrix()
+        elseif not transitioning then
+            -- Fully draw current when no transition
+            current.draw()
         end
 
-        gl.pushMatrix()
-        gl.color(1, 1, 1, alpha)
-        local ended = next.draw()
-        gl.popMatrix()
+        -- Draw next fading in
+        if next then
+            gl.pushMatrix()
+            gl.color(1, 1, 1, alpha)
+            next.draw()
+            gl.popMatrix()
+        end
 
-        if alpha >= 1 then
+        -- Finalize transition
+        if transitioning and alpha >= 1 then
             current.unload()
             current = next
             next = nil
+            transitioning = false
             current.start()
         end
     end
 
     return { draw = draw }
 end
+
 
 local player = Player()
 
