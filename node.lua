@@ -1,4 +1,4 @@
-gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
+gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT) 
 util.no_globals()
 
 local json = require "json"
@@ -132,7 +132,7 @@ local function Image(asset_name, duration)
         started = sys.now()
     end
 
-    local function draw(always)
+    local function draw()
         gl.pushMatrix()
         gl.translate(WIDTH/2, HEIGHT/2)
         gl.scale(scale, scale)
@@ -153,7 +153,6 @@ local function Image(asset_name, duration)
         end
 
         gl.popMatrix()
-        if always then return false end
         return sys.now() - started > duration
     end
 
@@ -169,31 +168,36 @@ local function Image(asset_name, duration)
 end
 
 local function Video(asset_name)
+    print("started new video " .. asset_name)
     local file = resource.open_file(asset_name)
     local obj
-    local function start() end
 
-    local function draw(always)
+    local function start()
+    end
+    local function draw()
         if not obj then
-            obj = resource.load_video{ file = file; raw = true; }
+            obj = resource.load_video{
+                file = file;
+                raw = true;
+            }
         else
             local state, w, h = obj:state()
             if state == "loaded" then
-                if portrait then w, h = h, w end
+                if portrait then
+                    w, h = h, w
+                end
                 local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, w, h)
                 x1, y1 = vid_scaler(x1, y1)
                 x2, y2 = vid_scaler(x2, y2)
                 obj:place(x1, y1, x2, y2, rotation)
             end
         end
-        if always then return false end
-        return obj and obj:state() == "finished"
+        return obj:state() == "finished"
     end
 
     local function unload()
-        if obj then obj:dispose() end
+        obj:dispose()
     end
-
     return {
         start = start;
         draw = draw;
@@ -201,60 +205,30 @@ local function Video(asset_name)
     }
 end
 
-local fade_duration = 1
-
 local function Player()
     local offset = 0
     local current = Image(main_logo_name, 5)
     local next
     current.start()
-    local transition_start = nil
-    local in_transition = false
-
-    local function start_next()
-        local assets = get_assets()
-        offset = offset + 1
-        if offset > #assets then offset = 1 end
-        local asset = assets[offset]
-        next = ({
-            image = Image;
-            video = Video;
-        })[asset.media.type](asset.media.asset_name, asset.duration)
-        next.start()
-        transition_start = sys.now()
-        in_transition = true
-    end
-
     local function draw()
-        if not in_transition then
-            local ended = current.draw(false)
-            if ended then
-                start_next()
-            end
-        else
-            local elapsed = sys.now() - transition_start
-            local alpha = math.min(1, elapsed / fade_duration)
-
-            gl.pushMatrix()
-            gl.color(1, 1, 1, 1 - alpha)
-            current.draw(true)
-            gl.popMatrix()
-
-            gl.pushMatrix()
-            gl.color(1, 1, 1, alpha)
-            next.draw(true)
-            gl.popMatrix()
-
-            if alpha >= 1 then
-                current.unload()
-                current = next
-                next = nil
-                in_transition = false
-                current.start()
-            end
+        if not next then
+            local assets = get_assets()
+            offset = offset + 1
+            if offset > #assets then offset = 1 end
+            local asset = assets[offset]
+            next = ({
+                image = Image;
+                video = Video;
+            })[asset.media.type](asset.media.asset_name, asset.duration)
+        end
+        local ended = current.draw()
+        if ended then
+            current.unload()
+            current = next
+            next = nil
+            current.start()
         end
     end
-
     return { draw = draw }
 end
 
@@ -263,14 +237,15 @@ local player = Player()
 function node.render()
     gl.clear(1,1,1,0)
 
+    -- Apply screen rotation globally
     st()
 
+    -- Draw video/image content
     gl.pushMatrix()
     player.draw()
     gl.popMatrix()
 
-    gl.color(1,1,1,1)
-
+    -- Apply scaling for UI overlays
     gl.translate(WIDTH/2, HEIGHT/2)
     gl.scale(scale, scale)
     gl.translate(-WIDTH/2, -HEIGHT/2)
