@@ -168,24 +168,33 @@ local function Image(asset_name, duration)
 end
 
 local function Video(asset_name)
+    print("started new video " .. asset_name)
     local file = resource.open_file(asset_name)
     local obj
-    local function start() end
+
+    local function start()
+    end
     local function draw()
         if not obj then
-            obj = resource.load_video{ file = file; raw = true; }
+            obj = resource.load_video{
+                file = file;
+                raw = true;
+            }
         else
             local state, w, h = obj:state()
             if state == "loaded" then
-                if portrait then w, h = h, w end
-                local scale = WIDTH / w
-                local new_h = h * scale
-                local offset_y = (HEIGHT - new_h) / 2
-                obj:place(0, offset_y, WIDTH, offset_y + new_h)
+                if portrait then
+                    w, h = h, w
+                end
+                local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, w, h)
+                x1, y1 = vid_scaler(x1, y1)
+                x2, y2 = vid_scaler(x2, y2)
+                obj:place(x1, y1, x2, y2, rotation)
             end
         end
         return obj:state() == "finished"
     end
+
     local function unload()
         obj:dispose()
     end
