@@ -205,11 +205,15 @@ local function Video(asset_name)
     }
 end
 
+local fade_duration = 1
+
 local function Player()
     local offset = 0
     local current = Image(main_logo_name, 5)
     local next
     current.start()
+    local transition_start
+
     local function draw()
         if not next then
             local assets = get_assets()
@@ -220,15 +224,33 @@ local function Player()
                 image = Image;
                 video = Video;
             })[asset.media.type](asset.media.asset_name, asset.duration)
+            transition_start = sys.now()
+            next.start()
         end
-        local ended = current.draw()
-        if ended then
+
+        local elapsed = sys.now() - transition_start
+        local alpha = math.min(1, elapsed / fade_duration)
+
+        if alpha < 1 then
+            gl.pushMatrix()
+            gl.color(1, 1, 1, 1 - alpha)
+            current.draw()
+            gl.popMatrix()
+        end
+
+        gl.pushMatrix()
+        gl.color(1, 1, 1, alpha)
+        local ended = next.draw()
+        gl.popMatrix()
+
+        if alpha >= 1 then
             current.unload()
             current = next
             next = nil
             current.start()
         end
     end
+
     return { draw = draw }
 end
 
@@ -244,6 +266,8 @@ function node.render()
     gl.pushMatrix()
     player.draw()
     gl.popMatrix()
+
+    gl.color(1,1,1,1)
 
     -- Apply scaling for UI overlays
     gl.translate(WIDTH/2, HEIGHT/2)
