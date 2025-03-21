@@ -175,8 +175,13 @@ local function Video(asset_name)
             local state, w, h = obj:state()
             if state == "loaded" then
                 if portrait then w, h = h, w end
-                local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
-                obj:place(x1, y1, x2, y2, rotation)
+
+                -- Full width, center vertically
+                local scale = WIDTH / w
+                local new_h = h * scale
+                local offset_y = (HEIGHT - new_h) / 2
+
+                obj:place(0, offset_y, WIDTH, offset_y + new_h, rotation)
             end
         end
         return obj:state() == "finished"
@@ -190,6 +195,7 @@ local function Video(asset_name)
         unload = unload;
     }
 end
+
 
 local function Player()
     local offset = 0
