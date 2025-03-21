@@ -172,8 +172,16 @@ local function Video(asset_name)
             local state, w, h = obj:state()
             if state == "loaded" then
                 if portrait then w, h = h, w end
-                local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
-                obj:place(0, 0, WIDTH, y2 - y1, rotation)
+
+                -- Calculate "cover" scaling
+                local scale_factor = math.max(WIDTH / w, HEIGHT / h)
+                local scaled_w = w * scale_factor
+                local scaled_h = h * scale_factor
+                local offset_x = (WIDTH - scaled_w) / 2
+                local offset_y = (HEIGHT - scaled_h) / 2
+
+                -- Now fully cover the screen
+                obj:place(offset_x, offset_y, offset_x + scaled_w, offset_y + scaled_h, rotation)
             end
         end
         return obj:state() == "finished"
