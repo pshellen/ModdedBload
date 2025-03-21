@@ -247,12 +247,17 @@ function node.render()
     gl.clear(1,1,1,0)
     st()
 
+    -- DRAW VIDEO FIRST (NO GLOBAL SCALE)
+    gl.pushMatrix()
+    player.draw() -- Video/Image gets drawn here (video will now stay at native scale)
+    gl.popMatrix()
+
+    -- APPLY GLOBAL SCALE FOR UI OVERLAYS ONLY
     gl.translate(WIDTH/2, HEIGHT/2)
-    
+    gl.scale(scale, scale)
     gl.translate(-WIDTH/2, -HEIGHT/2)
 
-    player.draw()
-
+    -- UI overlays (text, corner logo, etc.)
     local default_size = 80
     if portrait then
         default_size = 60
