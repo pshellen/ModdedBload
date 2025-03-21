@@ -132,7 +132,7 @@ local function Image(asset_name, duration)
         started = sys.now()
     end
 
-    local function draw()
+    local function draw(always)
         gl.pushMatrix()
         gl.translate(WIDTH/2, HEIGHT/2)
         gl.scale(scale, scale)
@@ -153,6 +153,7 @@ local function Image(asset_name, duration)
         end
 
         gl.popMatrix()
+        if always then return false end
         return sys.now() - started > duration
     end
 
@@ -168,36 +169,31 @@ local function Image(asset_name, duration)
 end
 
 local function Video(asset_name)
-    print("started new video " .. asset_name)
     local file = resource.open_file(asset_name)
     local obj
+    local function start() end
 
-    local function start()
-    end
-    local function draw()
+    local function draw(always)
         if not obj then
-            obj = resource.load_video{
-                file = file;
-                raw = true;
-            }
+            obj = resource.load_video{ file = file; raw = true; }
         else
             local state, w, h = obj:state()
             if state == "loaded" then
-                if portrait then
-                    w, h = h, w
-                end
+                if portrait then w, h = h, w end
                 local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, w, h)
                 x1, y1 = vid_scaler(x1, y1)
                 x2, y2 = vid_scaler(x2, y2)
                 obj:place(x1, y1, x2, y2, rotation)
             end
         end
-        return obj:state() == "finished"
+        if always then return false end
+        return obj and obj:state() == "finished"
     end
 
     local function unload()
-        obj:dispose()
+        if obj then obj:dispose() end
     end
+
     return {
         start = start;
         draw = draw;
@@ -230,30 +226,25 @@ local function Player()
     end
 
     local function draw()
-        -- normal mode
         if not in_transition then
-            local ended = current.draw()
+            local ended = current.draw(false)
             if ended then
                 start_next()
             end
         else
-            -- Fading logic
             local elapsed = sys.now() - transition_start
             local alpha = math.min(1, elapsed / fade_duration)
 
-            -- Draw current fading out
             gl.pushMatrix()
             gl.color(1, 1, 1, 1 - alpha)
-            current.draw()
+            current.draw(true)
             gl.popMatrix()
 
-            -- Draw next fading in
             gl.pushMatrix()
             gl.color(1, 1, 1, alpha)
-            next.draw()
+            next.draw(true)
             gl.popMatrix()
 
-            -- If fade is finished, promote next to current
             if alpha >= 1 then
                 current.unload()
                 current = next
@@ -267,24 +258,19 @@ local function Player()
     return { draw = draw }
 end
 
-
-
 local player = Player()
 
 function node.render()
     gl.clear(1,1,1,0)
 
-    -- Apply screen rotation globally
     st()
 
-    -- Draw video/image content
     gl.pushMatrix()
     player.draw()
     gl.popMatrix()
 
     gl.color(1,1,1,1)
 
-    -- Apply scaling for UI overlays
     gl.translate(WIDTH/2, HEIGHT/2)
     gl.scale(scale, scale)
     gl.translate(-WIDTH/2, -HEIGHT/2)
