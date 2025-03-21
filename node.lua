@@ -124,7 +124,6 @@ local function get_assets()
     } }
 end
 
--- CENTERED LOGO HANDLING INSIDE IMAGE()
 local function Image(asset_name, duration)
     local obj = resource.load_image(asset_name)
     local started
@@ -172,34 +171,8 @@ local function Video(asset_name)
             local state, w, h = obj:state()
             if state == "loaded" then
                 if portrait then w, h = h, w end
-
-                -- More balanced "cover-fit"
-                local video_aspect = w / h
-                local screen_aspect = WIDTH / HEIGHT
-
-                local draw_x1, draw_y1, draw_x2, draw_y2
-
-                if video_aspect > screen_aspect then
-                    -- Video is wider than screen
-                    local scale = HEIGHT / h
-                    local new_w = w * scale
-                    local offset_x = (WIDTH - new_w) / 2
-                    draw_x1 = offset_x
-                    draw_y1 = 0
-                    draw_x2 = offset_x + new_w
-                    draw_y2 = HEIGHT
-                else
-                    -- Video is taller than screen
-                    local scale = WIDTH / w
-                    local new_h = h * scale
-                    local offset_y = (HEIGHT - new_h) / 2
-                    draw_x1 = 0
-                    draw_y1 = offset_y
-                    draw_x2 = WIDTH
-                    draw_y2 = offset_y + new_h
-                end
-
-                obj:place(draw_x1, draw_y1, draw_x2, draw_y2, rotation)
+                local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w, h)
+                obj:place(x1, y1, x2, y2, rotation)
             end
         end
         return obj:state() == "finished"
@@ -247,17 +220,16 @@ function node.render()
     gl.clear(1,1,1,0)
     st()
 
-    -- DRAW VIDEO FIRST (NO GLOBAL SCALE)
+    -- video/image draws here without global scale
     gl.pushMatrix()
-    player.draw() -- Video/Image gets drawn here (video will now stay at native scale)
+    player.draw()
     gl.popMatrix()
 
-    -- APPLY GLOBAL SCALE FOR UI OVERLAYS ONLY
+    -- UI scale starts here
     gl.translate(WIDTH/2, HEIGHT/2)
     gl.scale(scale, scale)
     gl.translate(-WIDTH/2, -HEIGHT/2)
 
-    -- UI overlays (text, corner logo, etc.)
     local default_size = 80
     if portrait then
         default_size = 60
@@ -277,7 +249,6 @@ function node.render()
         local full_w = font:width(full_text, text_size)
         local full_x = (WIDTH / 2) - (full_w / 2)
 
-        -- Offset from the bottom by 40 pixels
         local full_y = HEIGHT - text_size - 150
 
         box:draw(full_x - 10, full_y - 10, full_x + full_w + 10, full_y + text_size + 10)
