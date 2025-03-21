@@ -248,7 +248,7 @@ function node.render()
     st()
 
     gl.translate(WIDTH/2, HEIGHT/2)
-    gl.scale(scale, scale)
+    
     gl.translate(-WIDTH/2, -HEIGHT/2)
 
     player.draw()
