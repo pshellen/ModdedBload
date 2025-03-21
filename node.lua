@@ -212,62 +212,61 @@ local function Player()
     local current = Image(main_logo_name, 5)
     local next
     current.start()
-    local transition_start
-    local transitioning = false
+    local transition_start = nil
+    local in_transition = false
+
+    local function start_next()
+        local assets = get_assets()
+        offset = offset + 1
+        if offset > #assets then offset = 1 end
+        local asset = assets[offset]
+        next = ({
+            image = Image;
+            video = Video;
+        })[asset.media.type](asset.media.asset_name, asset.duration)
+        next.start()
+        transition_start = sys.now()
+        in_transition = true
+    end
 
     local function draw()
-        if not transitioning and not next then
-            local assets = get_assets()
-            offset = offset + 1
-            if offset > #assets then offset = 1 end
-            local asset = assets[offset]
-            next = ({
-                image = Image;
-                video = Video;
-            })[asset.media.type](asset.media.asset_name, asset.duration)
-            next.start()
-            transition_start = sys.now()
-            transitioning = true
-        end
-
-        -- Fading
-        local alpha = 1
-        if transitioning then
+        -- normal mode
+        if not in_transition then
+            local ended = current.draw()
+            if ended then
+                start_next()
+            end
+        else
+            -- Fading logic
             local elapsed = sys.now() - transition_start
-            alpha = math.min(1, elapsed / fade_duration)
-        end
+            local alpha = math.min(1, elapsed / fade_duration)
 
-        -- Draw current fading out
-        if transitioning and alpha < 1 then
+            -- Draw current fading out
             gl.pushMatrix()
             gl.color(1, 1, 1, 1 - alpha)
             current.draw()
             gl.popMatrix()
-        elseif not transitioning then
-            -- Fully draw current when no transition
-            current.draw()
-        end
 
-        -- Draw next fading in
-        if next then
+            -- Draw next fading in
             gl.pushMatrix()
             gl.color(1, 1, 1, alpha)
             next.draw()
             gl.popMatrix()
-        end
 
-        -- Finalize transition
-        if transitioning and alpha >= 1 then
-            current.unload()
-            current = next
-            next = nil
-            transitioning = false
-            current.start()
+            -- If fade is finished, promote next to current
+            if alpha >= 1 then
+                current.unload()
+                current = next
+                next = nil
+                in_transition = false
+                current.start()
+            end
         end
     end
 
     return { draw = draw }
 end
+
 
 
 local player = Player()
