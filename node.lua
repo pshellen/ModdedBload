@@ -247,8 +247,8 @@ function node.render()
 
     gl.pushMatrix()
     player.draw()
-    gl.popMatrix()
 
+    -- Fade layer applied ONLY on player content
     if fading then
         local t = sys.now() - fade_timer
         fade_alpha = 1 - math.min(1, t / fade_duration)
@@ -262,6 +262,9 @@ function node.render()
         gl.color(1,1,1,1)
     end
 
+    gl.popMatrix()
+
+    -- UI overlays unaffected by fade
     gl.translate(WIDTH/2, HEIGHT/2)
     gl.scale(scale, scale)
     gl.translate(-WIDTH/2, -HEIGHT/2)
