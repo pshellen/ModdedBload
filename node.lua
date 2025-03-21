@@ -133,6 +133,10 @@ local function Image(asset_name, duration)
     end
 
     local function draw()
+    gl.pushMatrix()
+    gl.translate(WIDTH/2, HEIGHT/2)
+    gl.scale(scale, scale)
+    gl.translate(-WIDTH/2, -HEIGHT/2)
         local w_img, h_img = obj:size()
         if asset_name == main_logo_name then
             local scale_factor = math.min(WIDTH / w_img, HEIGHT / h_img) * 0.8
