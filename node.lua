@@ -1,4 +1,4 @@
-gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT) 
+gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
 util.no_globals()
 
 local json = require "json"
@@ -20,6 +20,11 @@ local outdated = false
 
 local my_serial = sys.get_env "SERIAL"
 local scale = 1
+
+local fade_alpha = 1
+local fading = false
+local fade_timer = 0
+local fade_duration = 1.0
 
 local schedule = bload.Bload()
 
@@ -220,6 +225,8 @@ local function Player()
                 image = Image;
                 video = Video;
             })[asset.media.type](asset.media.asset_name, asset.duration)
+            fading = true
+            fade_timer = sys.now()
         end
         local ended = current.draw()
         if ended then
@@ -236,16 +243,25 @@ local player = Player()
 
 function node.render()
     gl.clear(1,1,1,0)
-
-    -- Apply screen rotation globally
     st()
 
-    -- Draw video/image content
     gl.pushMatrix()
     player.draw()
     gl.popMatrix()
 
-    -- Apply scaling for UI overlays
+    if fading then
+        local t = sys.now() - fade_timer
+        fade_alpha = 1 - math.min(1, t / fade_duration)
+        if fade_alpha <= 0 then
+            fade_alpha = 0
+            fading = false
+        end
+
+        gl.color(0, 0, 0, fade_alpha)
+        gl.rect(0, 0, WIDTH, HEIGHT)
+        gl.color(1,1,1,1)
+    end
+
     gl.translate(WIDTH/2, HEIGHT/2)
     gl.scale(scale, scale)
     gl.translate(-WIDTH/2, -HEIGHT/2)
