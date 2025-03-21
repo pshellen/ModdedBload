@@ -133,10 +133,11 @@ local function Image(asset_name, duration)
     end
 
     local function draw()
-    gl.pushMatrix()
-    gl.translate(WIDTH/2, HEIGHT/2)
-    gl.scale(scale, scale)
-    gl.translate(-WIDTH/2, -HEIGHT/2)
+        gl.pushMatrix()
+        gl.translate(WIDTH/2, HEIGHT/2)
+        gl.scale(scale, scale)
+        gl.translate(-WIDTH/2, -HEIGHT/2)
+
         local w_img, h_img = obj:size()
         if asset_name == main_logo_name then
             local scale_factor = math.min(WIDTH / w_img, HEIGHT / h_img) * 0.8
@@ -150,6 +151,8 @@ local function Image(asset_name, duration)
             local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, w_img, h_img)
             obj:draw(0, offset_top, WIDTH, y2 - y1)
         end
+
+        gl.popMatrix()
         return sys.now() - started > duration
     end
 
@@ -175,13 +178,10 @@ local function Video(asset_name)
             local state, w, h = obj:state()
             if state == "loaded" then
                 if portrait then w, h = h, w end
-
-                -- Full width, center vertically
                 local scale = WIDTH / w
                 local new_h = h * scale
                 local offset_y = (HEIGHT - new_h) / 2
-
-                obj:place(0, offset_y, WIDTH, offset_y + new_h, rotation)
+                obj:place(0, offset_y, WIDTH, offset_y + new_h)
             end
         end
         return obj:state() == "finished"
@@ -195,7 +195,6 @@ local function Video(asset_name)
         unload = unload;
     }
 end
-
 
 local function Player()
     local offset = 0
@@ -228,14 +227,16 @@ local player = Player()
 
 function node.render()
     gl.clear(1,1,1,0)
+
+    -- Apply screen rotation globally
     st()
 
-    -- video/image draws here without global scale
+    -- Draw video/image content
     gl.pushMatrix()
     player.draw()
     gl.popMatrix()
 
-    -- UI scale starts here
+    -- Apply scaling for UI overlays
     gl.translate(WIDTH/2, HEIGHT/2)
     gl.scale(scale, scale)
     gl.translate(-WIDTH/2, -HEIGHT/2)
