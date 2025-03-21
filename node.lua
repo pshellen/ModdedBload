@@ -173,15 +173,33 @@ local function Video(asset_name)
             if state == "loaded" then
                 if portrait then w, h = h, w end
 
-                -- Calculate "cover" scaling
-                local scale_factor = math.max(WIDTH / w, HEIGHT / h)
-                local scaled_w = w * scale_factor
-                local scaled_h = h * scale_factor
-                local offset_x = (WIDTH - scaled_w) / 2
-                local offset_y = (HEIGHT - scaled_h) / 2
+                -- More balanced "cover-fit"
+                local video_aspect = w / h
+                local screen_aspect = WIDTH / HEIGHT
 
-                -- Now fully cover the screen
-                obj:place(offset_x, offset_y, offset_x + scaled_w, offset_y + scaled_h, rotation)
+                local draw_x1, draw_y1, draw_x2, draw_y2
+
+                if video_aspect > screen_aspect then
+                    -- Video is wider than screen
+                    local scale = HEIGHT / h
+                    local new_w = w * scale
+                    local offset_x = (WIDTH - new_w) / 2
+                    draw_x1 = offset_x
+                    draw_y1 = 0
+                    draw_x2 = offset_x + new_w
+                    draw_y2 = HEIGHT
+                else
+                    -- Video is taller than screen
+                    local scale = WIDTH / w
+                    local new_h = h * scale
+                    local offset_y = (HEIGHT - new_h) / 2
+                    draw_x1 = 0
+                    draw_y1 = offset_y
+                    draw_x2 = WIDTH
+                    draw_y2 = offset_y + new_h
+                end
+
+                obj:place(draw_x1, draw_y1, draw_x2, draw_y2, rotation)
             end
         end
         return obj:state() == "finished"
